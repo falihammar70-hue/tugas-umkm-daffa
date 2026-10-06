@@ -20,7 +20,7 @@ session_destroy();
 
 //mulai sesi baru untuk flash message
 session_start();
-$_SESSION['flash_success'] = ['anda telah berhasil keluar dari akun.'];
+$_SESSION['flash_success'] = 'Anda berhasil keluar dari akun.';
 header("Location: index.php");
 exit;
 

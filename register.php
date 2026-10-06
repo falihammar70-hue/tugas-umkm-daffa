@@ -1,27 +1,33 @@
 <?php
 include 'config/koneksi.php';
 
+$flash_success = $_SESSION['flash_success'] ?? null;
+$flash_error = $_SESSION['flash_error'] ?? null;
+unset($_SESSION['flash_success'], $_SESSION['flash_error']);
+
 if (isset($_POST['register'])) {
     $username = trim($_POST['username'] ?? '');
     $password = trim($_POST['password'] ?? '');
 
     if ($username === '' || $password === '') {
-        echo "<script>alert('Username dan password harus diisi.');</script>";
+      $flash_error = 'Username dan password harus diisi.';
     } else {
         $username = mysqli_real_escape_string($koneksi, $username);
         $passwordHash = md5($password);
 
         $checkUser = mysqli_query($koneksi, "SELECT * FROM tb_user WHERE username = '$username' LIMIT 1");
         if ($checkUser && mysqli_num_rows($checkUser) > 0) {
-            echo "<script>alert('Username sudah terdaftar. Gunakan username lain.');</script>";
+          $flash_error = 'Username sudah terdaftar. Gunakan username lain.';
         } else {
           $email = $username . '@local.invalid';
           $register = mysqli_query($koneksi, "INSERT INTO tb_user (nama, email, username, password, hp, alamat, role) VALUES ('$username', '$email', '$username', '$passwordHash', '', '', 'pelanggan')");
 
             if ($register) {
-                echo "<script>alert('Registrasi berhasil. Silakan login.'); window.location.href='login.php';</script>";
+              $_SESSION['flash_success'] = 'Registrasi berhasil. Silakan masuk dengan akun Anda.';
+              header('Location: login.php');
+              exit;
             } else {
-                echo "<script>alert('Registrasi gagal. Silakan coba lagi.');</script>";
+              $flash_error = 'Registrasi gagal. Silakan coba lagi.';
             }
         }
     }
@@ -185,6 +191,29 @@ if (isset($_POST['register'])) {
         text-align: center;
         color: #9ca3af;
       }
+
+      .notice {
+        position: fixed;
+        top: 1rem;
+        right: 1rem;
+        z-index: 1000;
+        width: min(25rem, calc(100vw - 2rem));
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 0.75rem;
+        padding: 1rem 1.1rem;
+        border: 1px solid;
+        border-radius: 10px;
+        font-size: 0.85rem;
+        line-height: 1.45;
+        box-shadow: 0 12px 32px rgba(15, 23, 42, 0.16);
+        animation: notice-in 0.25s ease-out;
+      }
+      .notice-success { color: #166534; background: #f0fdf4; border-color: #bbf7d0; }
+      .notice-error { color: #9f1239; background: #fff1f2; border-color: #fecdd3; }
+      .notice button { flex: 0 0 auto; border: 0; background: transparent; color: inherit; font-size: 1.2rem; line-height: 1; cursor: pointer; }
+      @keyframes notice-in { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
 
       .bd-mode-toggle { display: none; }
 
@@ -376,6 +405,13 @@ if (isset($_POST['register'])) {
     <main class="form-signin w-100 m-auto">
       <h1>Buat Akun</h1>
       <p class="subtitle">Daftar untuk mulai berbelanja.</p>
+      <?php if ($flash_success || $flash_error): ?>
+        <?php $is_error = (bool)$flash_error; ?>
+        <div class="notice <?= $is_error ? 'notice-error' : 'notice-success' ?>" role="<?= $is_error ? 'alert' : 'status' ?>" aria-live="polite">
+          <span><?= htmlspecialchars($flash_error ?: $flash_success, ENT_QUOTES, 'UTF-8') ?></span>
+          <button type="button" aria-label="Tutup notifikasi" onclick="this.parentElement.remove()">&times;</button>
+        </div>
+      <?php endif; ?>
       <form method="POST" action="">
         <div class="field">
           <label for="username">Username</label>
@@ -403,6 +439,8 @@ if (isset($_POST['register'])) {
         pass.type = show ? 'text' : 'password';
         btn.textContent = show ? 'Sembunyi' : 'Lihat';
       });
+      const notice = document.querySelector('.notice');
+      if (notice) setTimeout(() => notice.remove(), 8000);
     </script>
   </body>
 </html>

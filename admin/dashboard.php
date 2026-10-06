@@ -4,6 +4,9 @@ require_once __DIR__ . '/../config/koneksi.php';
 /** @var mysqli $koneksi */
 global $koneksi;
 $page_title = 'Ringkasan Dashboard';
+$flash_success = $_SESSION['flash_success'] ?? null;
+$flash_error = $_SESSION['flash_error'] ?? null;
+unset($_SESSION['flash_success'], $_SESSION['flash_error']);
 require_once __DIR__ . '/layout_header.php';
 
 // 1. Statistik
@@ -35,6 +38,18 @@ if ($res_low_stock) {
     }
 }
 ?>
+
+<?php if ($flash_success || $flash_error): ?>
+    <?php $is_error = (bool)$flash_error; ?>
+    <div class="admin-notification fixed right-4 top-4 z-[100] flex w-[calc(100%-2rem)] max-w-md items-start justify-between gap-3 rounded-xl border p-4 text-sm shadow-xl <?= $is_error ? 'border-rose-200 bg-rose-50 text-rose-800' : 'border-emerald-200 bg-emerald-50 text-emerald-800' ?>" role="<?= $is_error ? 'alert' : 'status' ?>" aria-live="polite">
+        <span><?= htmlspecialchars($flash_error ?: $flash_success, ENT_QUOTES, 'UTF-8') ?></span>
+        <button type="button" aria-label="Tutup notifikasi" onclick="this.parentElement.remove()" class="text-lg leading-none">&times;</button>
+    </div>
+    <script>
+        const adminNotification = document.querySelector('.admin-notification');
+        if (adminNotification) setTimeout(() => adminNotification.remove(), 8000);
+    </script>
+<?php endif; ?>
 
 <!-- Stat Cards -->
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">

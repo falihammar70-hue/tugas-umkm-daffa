@@ -31,6 +31,8 @@ $keranjang = $_SESSION['keranjang'];
 
 // 1. Validasi Stok Seluruh Item Keranjang di Database
 $total_harga = 0;
+$total_bonus = 0;
+$total_qty_dibeli = 0;
 $items_to_process = [];
 
 foreach ($keranjang as $id_prod => $qty) {
@@ -49,22 +51,26 @@ foreach ($keranjang as $id_prod => $qty) {
     }
 
     $prod = mysqli_fetch_assoc($result);
+    $bonus_sebelumnya = intdiv($total_qty_dibeli, 5);
+    $total_qty_dibeli += $qty;
+    $jumlah_bonus = intdiv($total_qty_dibeli, 5) - $bonus_sebelumnya;
+    $total_unit = $qty + $jumlah_bonus;
 
-    if ($prod['stok'] < $qty) {
-        $_SESSION['flash_error'] = "Stok untuk produk '{$prod['nama']}' tidak mencukupi (sisa: {$prod['stok']} pcs). Mohon sesuaikan jumlah pesanan Anda.";
+    if ((int)$prod['stok'] < $total_unit) {
+        $_SESSION['flash_error'] = "Stok untuk produk '{$prod['nama']}' tidak cukup untuk {$qty} pcs pembelian dan {$jumlah_bonus} pcs bonus (sisa: {$prod['stok']} pcs).";
         header("Location: keranjang.php");
         exit;
     }
 
     $subtotal = $prod['harga'] * $qty;
     $total_harga += $subtotal;
+    $total_bonus += $jumlah_bonus;
 
     $items_to_process[] = [
         'id' => $prod['id'],
         'nama' => $prod['nama'],
         'harga' => $prod['harga'],
-        'qty' => $qty,
-        'stok_sekarang' => $prod['stok']
+        'qty' => $qty
     ];
 }
 
@@ -87,23 +93,16 @@ try {
 
     $id_transaksi_baru = mysqli_insert_id($koneksi);
 
-    // B. Simpan ke tb_detail & Potong Stok Produk
+    // B. Simpan ke tb_detail; trigger menghitung bonus dan memotong stok.
     foreach ($items_to_process as $item) {
         $id_produk = $item['id'];
         $jumlah = $item['qty'];
-        $stok_baru = $item['stok_sekarang'] - $jumlah;
 
         // Insert tb_detail
         $query_detail = "INSERT INTO tb_detail (id_transaksi, id_produk, jumlah) 
                          VALUES ($id_transaksi_baru, $id_produk, $jumlah)";
         if (!mysqli_query($koneksi, $query_detail)) {
             throw new Exception("Gagal menyimpan rincian produk transaksi: " . mysqli_error($koneksi));
-        }
-
-        // Potong stok tb_produk
-        $query_stok = "UPDATE tb_produk SET stok = $stok_baru WHERE id = $id_produk";
-        if (!mysqli_query($koneksi, $query_stok)) {
-            throw new Exception("Gagal memperbarui sisa stok produk: " . mysqli_error($koneksi));
         }
     }
 
@@ -112,7 +111,9 @@ try {
 
     // Kosongkan keranjang belanja
     $_SESSION['keranjang'] = [];
-    $_SESSION['flash_success'] = "Pesanan berhasil dibuat! Terima kasih telah mendukung produk UMKM kami.";
+    $_SESSION['flash_success'] = $total_bonus > 0
+        ? "Pesanan berhasil dibuat! Anda mendapat bonus {$total_bonus} pcs."
+        : "Pesanan berhasil dibuat! Terima kasih telah mendukung produk UMKM kami.";
 
     // Redirect ke halaman invoice
     header("Location: invoice.php?id=" . $id_transaksi_baru);

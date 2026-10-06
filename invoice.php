@@ -35,13 +35,23 @@ $query_detail = "SELECT d.*, p.nama as nama_produk, p.harga as harga_produk, k.n
                  FROM tb_detail d 
                  JOIN tb_produk p ON d.id_produk = p.id 
                  JOIN tb_kategori k ON k.id_kategori = p.id_kategori
-                 WHERE d.id_transaksi = $id_transaksi";
+                 WHERE d.id_transaksi = $id_transaksi
+                 ORDER BY d.id_detail ASC";
 $res_detail = mysqli_query($koneksi, $query_detail);
 
 $items = [];
 $total_kalkulasi = 0;
+$jumlah_produk_sebelumnya = 0;
 if ($res_detail) {
     while ($row = mysqli_fetch_assoc($res_detail)) {
+        $jumlah_produk_sekarang = $jumlah_produk_sebelumnya + (int)$row['jumlah'];
+        if (array_key_exists('jumlah_bonus', $row)) {
+            $row['jumlah_bonus'] = (int)$row['jumlah_bonus'];
+        } else {
+            $row['jumlah_bonus'] = intdiv($jumlah_produk_sekarang, 5) - intdiv($jumlah_produk_sebelumnya, 5);
+        }
+        $jumlah_produk_sebelumnya = $jumlah_produk_sekarang;
+
         $sub = $row['harga_produk'] * $row['jumlah'];
         $total_kalkulasi += $sub;
         $row['subtotal'] = $sub;
@@ -109,7 +119,7 @@ if ($res_detail) {
                 </div>
                 <div>
                     <h1 class="text-2xl font-black text-gray-900 tracking-tight">UMKM<span class="text-emerald-600">Hebat</span></h1>
-                    <p class="text-xs text-gray-500">Sentra Produk Lokal Nusantara Berdaya</p>
+                    <p class="text-xs text-gray-500">Griya Pengantin Ummi</p>
                 </div>
             </div>
 
@@ -156,6 +166,7 @@ if ($res_detail) {
                             <th class="py-3 px-3">Kategori</th>
                             <th class="py-3 px-3 text-right">Harga Satuan</th>
                             <th class="py-3 px-3 text-center">Jumlah</th>
+                            <th class="py-3 px-3 text-center">Bonus</th>
                             <th class="py-3 px-3 text-right">Subtotal</th>
                         </tr>
                     </thead>
@@ -174,6 +185,9 @@ if ($res_detail) {
                                 </td>
                                 <td class="py-3 px-3 text-center font-bold text-gray-900">
                                     <?= $it['jumlah'] ?> pcs
+                                </td>
+                                <td class="py-3 px-3 text-center font-bold text-emerald-700">
+                                    <?= (int)$it['jumlah_bonus'] ?> pcs
                                 </td>
                                 <td class="py-3 px-3 text-right font-bold text-gray-900">
                                     <?= formatRupiah($it['subtotal']) ?>

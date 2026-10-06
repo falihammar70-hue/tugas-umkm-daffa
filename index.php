@@ -110,22 +110,28 @@ if ($res_produk) {
     <?php include __DIR__ . '/includes/navbar.php'; ?>
 
     <!-- Flash Notifications -->
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4 w-full">
+    <div class="fixed top-4 right-4 z-[100] w-[calc(100%-2rem)] max-w-md">
         <?php if ($flash_success): ?>
-            <div class="flex items-center p-4 mb-4 text-rose-800 rounded-2xl bg-rose-50 border border-rose-200 shadow-sm" role="alert">
-                <i class="fa-solid fa-circle-check text-xl mr-3 text-rose-700"></i>
-                <div class="text-sm font-medium flex-1"><?= htmlspecialchars($flash_success) ?></div>
-                <a href="keranjang.php" class="ml-4 underline font-bold text-xs uppercase tracking-wider text-rose-700 hover:text-rose-900">Lihat Keranjang &rarr;</a>
+            <div class="flash-notification flex items-center p-4 mb-4 text-emerald-800 rounded-xl bg-emerald-50 border border-emerald-200 shadow-xl" role="status" aria-live="polite">
+                <i class="fa-solid fa-circle-check text-xl mr-3 text-emerald-700"></i>
+                <div class="text-sm font-medium flex-1"><?= htmlspecialchars(is_array($flash_success) ? implode(' ', $flash_success) : $flash_success, ENT_QUOTES, 'UTF-8') ?></div>
+                <button type="button" aria-label="Tutup notifikasi" onclick="this.parentElement.remove()" class="ml-3 text-lg leading-none">&times;</button>
             </div>
         <?php endif; ?>
 
         <?php if ($flash_error): ?>
-            <div class="flex items-center p-4 mb-4 text-rose-800 rounded-2xl bg-rose-50 border border-rose-200 shadow-sm" role="alert">
+            <div class="flash-notification flex items-center p-4 mb-4 text-rose-800 rounded-xl bg-rose-50 border border-rose-200 shadow-xl" role="alert" aria-live="polite">
                 <i class="fa-solid fa-triangle-exclamation text-xl mr-3 text-rose-600"></i>
-                <div class="text-sm font-medium flex-1"><?= htmlspecialchars($flash_error) ?></div>
+                <div class="text-sm font-medium flex-1"><?= htmlspecialchars($flash_error, ENT_QUOTES, 'UTF-8') ?></div>
+                <button type="button" aria-label="Tutup notifikasi" onclick="this.parentElement.remove()" class="ml-3 text-lg leading-none">&times;</button>
             </div>
         <?php endif; ?>
     </div>
+    <script>
+        document.querySelectorAll('.flash-notification').forEach((notice) => {
+            setTimeout(() => notice.remove(), 8000);
+        });
+    </script>
 
     <!-- Hero Banner -->
     <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">

@@ -30,7 +30,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
         <div class="flex items-center gap-4">
             <span><i class="fa-solid fa-phone mr-1"></i> +6287872731758</span>
             <span class="hidden sm:inline">|</span>
-            <span class="hidden sm:inline"><i class="fa-solid fa-envelope mr-1"></i> info@ummipengantin.id</span>
+            <span class="hidden sm:inline"><i class="fa-solid fa-envelope mr-1"></i> inf@ummipengantin.id</span>
             <span class="hidden md:inline">|</span>
             <span class="hidden md:inline"><i class="fa-solid fa-location-dot mr-1"></i> cirebon, jawa barat</span>
         </div>

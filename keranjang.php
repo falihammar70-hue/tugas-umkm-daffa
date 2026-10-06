@@ -66,10 +66,12 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
 // Ambil data produk di keranjang dari database
 $item_keranjang = [];
 $subtotal_keseluruhan = 0;
+$jumlah_bonus_keseluruhan = 0;
+$jumlah_produk_keranjang = 0;
 
 if (!empty($_SESSION['keranjang'])) {
     $ids = implode(',', array_map('intval', array_keys($_SESSION['keranjang'])));
-    $query = "SELECT p.*, k.nama_kategori AS kategori FROM tb_produk p JOIN tb_kategori k ON k.id_kategori = p.id_kategori WHERE p.id IN ($ids)";
+    $query = "SELECT p.*, k.nama_kategori AS kategori FROM tb_produk p JOIN tb_kategori k ON k.id_kategori = p.id_kategori WHERE p.id IN ($ids) ORDER BY FIELD(p.id, $ids)";
     $result = mysqli_query($koneksi, $query);
 
     if ($result) {
@@ -78,8 +80,13 @@ if (!empty($_SESSION['keranjang'])) {
             $qty = $_SESSION['keranjang'][$id] ?? 0;
             if ($qty > 0) {
                 $subtotal = $row['harga'] * $qty;
+                $bonus_sebelumnya = intdiv($jumlah_produk_keranjang, 5);
+                $jumlah_produk_keranjang += (int)$qty;
+                $jumlah_bonus = intdiv($jumlah_produk_keranjang, 5) - $bonus_sebelumnya;
                 $subtotal_keseluruhan += $subtotal;
+                $jumlah_bonus_keseluruhan += $jumlah_bonus;
                 $row['qty'] = $qty;
+                $row['jumlah_bonus'] = $jumlah_bonus;
                 $row['subtotal'] = $subtotal;
                 $item_keranjang[] = $row;
             }
@@ -183,6 +190,16 @@ if (!empty($_SESSION['keranjang'])) {
                                             <span class="mx-1 text-gray-300">|</span>
                                             Stok: <?= $item['stok'] ?>
                                         </div>
+                                        <?php if ($item['jumlah_bonus'] > 0): ?>
+                                            <div class="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">
+                                                <i class="fa-solid fa-gift"></i>
+                                                Bonus gratis: +<?= $item['jumlah_bonus'] ?> pcs
+                                            </div>
+                                        <?php else: ?>
+                                            <div class="mt-2 text-xs font-medium text-emerald-700">
+                                                <i class="fa-solid fa-gift mr-1"></i> Bonus dihitung dari total barang di keranjang
+                                            </div>
+                                        <?php endif; ?>
                                     </div>
                                 </div>
 
@@ -285,6 +302,10 @@ if (!empty($_SESSION['keranjang'])) {
                             <div class="flex justify-between text-gray-500">
                                 <span>Subtotal Produk</span>
                                 <span class="font-semibold text-gray-700"><?= formatRupiah($subtotal_keseluruhan) ?></span>
+                            </div>
+                            <div class="flex justify-between text-emerald-700">
+                                <span>Bonus Gratis</span>
+                                <span class="font-bold"><?= $jumlah_bonus_keseluruhan ?> pcs</span>
                             </div>
                             <div class="flex justify-between text-gray-500">
                                 <span>Biaya Layanan & Pajak</span>

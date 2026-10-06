@@ -1,12 +1,16 @@
 <?php
 include 'config.php';
 
+$flash_success = $_SESSION['flash_success'] ?? null;
+$flash_error = $_SESSION['flash_error'] ?? null;
+unset($_SESSION['flash_success'], $_SESSION['flash_error']);
+
 if (isset($_POST['login'])) {
     $username = trim($_POST['username'] ?? '');
     $password = trim($_POST['password'] ?? '');
 
     if ($username === '' || $password === '') {
-        echo "<script>alert('Username dan password harus diisi.');</script>";
+        $flash_error = 'Username dan password harus diisi.';
     } else {
         $username = mysqli_real_escape_string($koneksi, $username);
         $query = mysqli_query($koneksi, "SELECT * FROM tb_user WHERE username = '$username' LIMIT 1");
@@ -18,6 +22,7 @@ if (isset($_POST['login'])) {
             $isValid = hash_equals(strtolower($storedPassword), md5($password));
 
             if ($isValid) {
+                session_regenerate_id(true);
                 $_SESSION['is_logged_in'] = true;
                 $_SESSION['user_id'] = (int) $user['id'];
                 $_SESSION['nama'] = $user['nama'] ?? '';
@@ -28,11 +33,12 @@ if (isset($_POST['login'])) {
                     'username' => $user['username'],
                     'role' => $user['role'] ?? 'pelanggan'
                 ];
+                $_SESSION['flash_success'] = 'Berhasil masuk. Selamat datang, ' . ($user['nama'] ?? $user['username']) . '!';
                 redirect(($user['role'] ?? 'pelanggan') === 'admin' ? 'admin/dashboard.php' : 'index.php');
             }
         }
 
-        echo "<script>alert('Username atau password salah.');</script>";
+        $flash_error = 'Username atau password salah.';
     }
 }
 ?>
@@ -196,6 +202,29 @@ if (isset($_POST['login'])) {
             text-align: center;
             color: #9ca3af;
         }
+
+        .notice {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            z-index: 1000;
+            width: min(25rem, calc(100vw - 2rem));
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 0.75rem;
+            padding: 1rem 1.1rem;
+            border: 1px solid;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            line-height: 1.45;
+            box-shadow: 0 12px 32px rgba(15, 23, 42, 0.16);
+            animation: notice-in 0.25s ease-out;
+        }
+        .notice-success { color: #166534; background: #f0fdf4; border-color: #bbf7d0; }
+        .notice-error { color: #9f1239; background: #fff1f2; border-color: #fecdd3; }
+        .notice button { flex: 0 0 auto; border: 0; background: transparent; color: inherit; font-size: 1.2rem; line-height: 1; cursor: pointer; }
+        @keyframes notice-in { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
@@ -203,6 +232,14 @@ if (isset($_POST['login'])) {
     <main class="card">
         <h1>Selamat Datang di Griya Pengantin Ummi</h1>
         <p class="subtitle">Masuk untuk melanjutkan.</p>
+
+        <?php if ($flash_success || $flash_error): ?>
+            <?php $is_error = (bool)$flash_error; ?>
+            <div class="notice <?= $is_error ? 'notice-error' : 'notice-success' ?>" role="<?= $is_error ? 'alert' : 'status' ?>" aria-live="polite">
+                <span><?= htmlspecialchars($flash_error ?: $flash_success, ENT_QUOTES, 'UTF-8') ?></span>
+                <button type="button" aria-label="Tutup notifikasi" onclick="this.parentElement.remove()">&times;</button>
+            </div>
+        <?php endif; ?>
 
         <form action="" method="post">
             <div class="field">
@@ -239,6 +276,8 @@ if (isset($_POST['login'])) {
             pass.type = show ? 'text' : 'password';
             btn.textContent = show ? 'Sembunyi' : 'Lihat';
         });
+        const notice = document.querySelector('.notice');
+        if (notice) setTimeout(() => notice.remove(), 8000);
     </script>
 </body>
 </html>
